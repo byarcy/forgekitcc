@@ -23,6 +23,25 @@ function Get-ManifestPath($t) { return (Join-Path $ManifestDir "$($t.name).tsv")
 
 function Get-Excludes($t) { return @($GlobalExcludes + @(Get-Prop $t 'verifyExclude' @())) }
 
+# Disk space used by a tool, or $null when its folder doesn't exist. Sums the manifest sizes
+# (fast, no disk walk). Tools with verifyExclude (pip packages) or without a manifest are
+# measured on disk so the number matches reality.
+function Get-ToolSize($t) {
+  $dir = Get-ToolDir $t
+  if (-not (Test-Path $dir)) { return $null }
+  $path = Get-ManifestPath $t
+  if ((Test-Path $path) -and @(Get-Prop $t 'verifyExclude' @()).Count -eq 0) {
+    [long]$sum = 0
+    foreach ($line in [IO.File]::ReadLines($path)) {
+      if (-not $line -or $line.StartsWith('#')) { continue }
+      [long]$n = 0
+      if ([long]::TryParse($line.Substring(0, [Math]::Max(0, $line.IndexOf("`t"))), [ref]$n)) { $sum += $n }
+    }
+    return $sum
+  }
+  return (Get-FolderBytes $dir)
+}
+
 function Test-Excluded([string]$Rel, [string[]]$Patterns) {
   foreach ($p in $Patterns) { if ($Rel -like $p -or "\$Rel" -like $p) { return $true } }
   return $false

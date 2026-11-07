@@ -67,7 +67,7 @@ The top line shows the state of each tool: `ok`, `UPDATE` (a newer version was f
 | Menu | Options |
 |---|---|
 | **1 Open build console** | Opens a new console window with every tool loaded. |
-| **2 Install / update** | `1` Update all · `2` Choose tools |
+| **2 Install / update** | `1` Update all · `2` Choose tools (shows the version and disk size of each tool) |
 | **3 Check installation** | `1` Quick check · `2` Full check + test build. If problems are found, it offers to repair them. |
 | **4 Settings** | `1` Add to PATH · `2` Remove from PATH · `3` Open log folder · `4` Clean temp files |
 
@@ -82,7 +82,7 @@ Every menu option also exists as a command, which is useful for scripts.
 | Command | What it does |
 |---|---|
 | `forgekitcc` | Opens the menu. |
-| `forgekitcc status` | Shows the installed and available version of each tool. |
+| `forgekitcc status` | Shows the installed and available version and the disk size of each tool, plus the total. |
 | `forgekitcc update [tools]` | Installs missing tools and updates the rest. |
 | `forgekitcc install [tools]` | Installs missing tools only. |
 | `forgekitcc repair [tools]` | Reinstalls tools, which fixes damaged installs. |
@@ -256,6 +256,10 @@ Nothing else is left on the system.
 ---
 
 ## 12. Changes
+
+**Unreleased**
+
+- `status` and the "Choose tools" menu show how much disk space each tool uses.
 
 **0.2.0**
 

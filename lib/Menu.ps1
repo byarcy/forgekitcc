@@ -82,7 +82,9 @@ function Read-ToolNumbers {
   Show-Header 'Choose tools'
   for ($i = 0; $i -lt $script:MenuStates.Count; $i++) {
     $s = $script:MenuStates[$i]
-    Write-Host ("  {0}  {1,-8} {2}" -f ($i + 1), $s.Name, $s.Version)
+    $size = '-'
+    if ($s.State -ne 'missing') { $size = Format-Size (Get-ToolSize $script:Tools[$i]) }
+    Write-Host ("  {0}  {1,-8} {2,-22} {3,8}" -f ($i + 1), $s.Name, $s.Version, $size)
   }
   Write-Host ''
   $answer = Read-Host ' Numbers separated by spaces (Enter = back)'

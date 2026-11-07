@@ -103,6 +103,13 @@ function Get-ShortError($ErrorRecord) {
 
 function Format-MB([long]$Bytes) { return [string][Math]::Round($Bytes / 1MB) }
 
+# "-" when unknown, "850 MB" below 1 GB, "2.1 GB" above.
+function Format-Size($Bytes) {
+  if ($null -eq $Bytes) { return '-' }
+  if ($Bytes -ge 1GB) { return ('{0:0.0} GB' -f ($Bytes / 1GB)).Replace(',', '.') }
+  return "$(Format-MB $Bytes) MB"
+}
+
 function Format-Elapsed([TimeSpan]$Span) { return ('{0}:{1:00}' -f [int][Math]::Floor($Span.TotalMinutes), $Span.Seconds) }
 
 # ============================================================ processes

@@ -158,8 +158,11 @@ function Get-StatusRows([switch]$Quick) {
     elseif (-not $inst)                     { $state = 'MISSING'; $pending += $t.name }
     elseif (Test-NeedsUpdate $t $inst $lat) { $state = 'UPDATE';  $pending += $t.name }
     else                                    { $state = 'up to date' }
+    $bytes = $null
+    if (-not $Quick -and $inst) { $bytes = Get-ToolSize $t }
     $rows += [pscustomobject]@{
-      Tool = $t.name; Installed = (Format-Ver $t $inst); Available = (Format-Ver $t $lat); Status = $state; Error = $err
+      Tool = $t.name; Installed = (Format-Ver $t $inst); Available = (Format-Ver $t $lat); Status = $state
+      Size = (Format-Size $bytes); Bytes = $bytes; Error = $err
     }
   }
   if ($reached -gt 0) { Save-State $pending }
@@ -171,7 +174,10 @@ function Show-Status {
   Write-Status 'Checking versions...'
   $rows = Get-StatusRows
   Clear-StatusLine
-  $rows | Format-Table Tool, Installed, Available, Status -AutoSize | Out-String -Width 200 | ForEach-Object { Write-Summary $_.TrimEnd() }
+  $rows | Format-Table Tool, Installed, Available, Status, @{ Label = 'Size'; Expression = { $_.Size }; Align = 'Right' } -AutoSize |
+    Out-String -Width 200 | ForEach-Object { Write-Summary $_.TrimEnd() }
+  $total = ($rows | Where-Object { $null -ne $_.Bytes } | Measure-Object -Property Bytes -Sum).Sum
+  if ($total) { Write-Summary "Total installed: $(Format-Size ([long]$total))" }
   $rows | Where-Object { $_.Error } | ForEach-Object { Write-Detail "  $($_.Tool): $($_.Error)" }
   if ($rows | Where-Object { $_.Status -in @('UPDATE', 'MISSING') }) { Write-Summary "`nRun: forgekitcc update" 'Yellow' }
 }
