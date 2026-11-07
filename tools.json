@@ -1,0 +1,59 @@
+{
+  "tools": [
+    {
+      "name": "python",
+      "type": "nuget",
+      "package": "python",
+      "pin": "3.12",
+      "dir": "python",
+      "subdir": "tools",
+      "exe": "python.exe",
+      "versionArgs": ["--version"],
+      "bin": ["", "Scripts"],
+      "verifyExclude": ["Lib\\site-packages\\*", "Scripts\\*"]
+    },
+    {
+      "name": "ninja",
+      "type": "github",
+      "repo": "ninja-build/ninja",
+      "asset": "^ninja-win\\.zip$",
+      "pin": "",
+      "dir": "ninja",
+      "subdir": "",
+      "exe": "ninja.exe",
+      "versionArgs": ["--version"],
+      "bin": [""]
+    },
+    {
+      "name": "cmake",
+      "type": "github",
+      "repo": "Kitware/CMake",
+      "asset": "^cmake-[\\d.]+-windows-x86_64\\.zip$",
+      "pin": "",
+      "dir": "cmake",
+      "subdir": "*",
+      "exe": "bin\\cmake.exe",
+      "versionArgs": ["--version"],
+      "bin": ["bin"]
+    },
+    {
+      "name": "llvm",
+      "type": "github",
+      "repo": "llvm/llvm-project",
+      "asset": "^clang\\+llvm-[\\d.]+-x86_64-pc-windows-msvc\\.tar\\.xz$",
+      "pin": "",
+      "dir": "llvm",
+      "subdir": "*",
+      "exe": "bin\\clang-cl.exe",
+      "versionArgs": ["--version"],
+      "bin": ["bin"]
+    },
+    {
+      "name": "msvc",
+      "type": "msvc",
+      "pin": "14.44",
+      "dir": "msvc",
+      "bin": []
+    }
+  ]
+}

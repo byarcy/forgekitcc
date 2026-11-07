@@ -1,0 +1,15 @@
+# Installed tools (downloaded by ForgeKitCC)
+/python/
+/ninja/
+/cmake/
+/llvm/
+/msvc/
+*.old/
+
+# Runtime files
+/_downloads/
+/_tmp_*/
+/logs/
+/manifests/
+/state.json
+/portable-msvc.py
