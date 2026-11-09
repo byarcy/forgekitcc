@@ -2,9 +2,10 @@
 # Dot-sourced by forgekitcc.ps1. $Root is defined there.
 
 $AppName           = 'ForgeKitCC'
-$AppVersion        = '0.2.0'
+$AppVersion        = '0.3.0'
 $ConfigFile        = Join-Path $Root 'tools.json'
 $StateFile         = Join-Path $Root 'state.json'
+$RecentFile        = Join-Path $Root 'recent.txt'
 $DownloadDir       = Join-Path $Root '_downloads'
 $ManifestDir       = Join-Path $Root 'manifests'
 $LogDir            = Join-Path $Root 'logs'
@@ -213,7 +214,7 @@ function Import-Config {
     foreach ($k in 'name', 'type', 'dir') {
       if (-not (Get-Prop $t $k)) { throw "a tool in tools.json is missing '$k'." }
     }
-    if ($t.type -notin @('github', 'nuget', 'msvc')) { throw "tool '$($t.name)' has an unknown type '$($t.type)'." }
+    if ($t.type -notin @('github', 'nuget', 'msvc', 'vscode')) { throw "tool '$($t.name)' has an unknown type '$($t.type)'." }
   }
   return $list
 }
@@ -221,8 +222,18 @@ function Import-Config {
 function Get-Tool([string]$Name) { return ($script:Tools | Where-Object { $_.name -eq $Name } | Select-Object -First 1) }
 function Get-ToolDir($t) { return (Join-Path $Root $t.dir) }
 
+# Optional tools (like VS Code) are left out of "all" until they are installed by name.
+function Test-Optional($t) { return [bool](Get-Prop $t 'optional' $false) }
+function Test-ToolPresent($t) {
+  $exe = [string](Get-Prop $t 'exe' '')
+  if (-not $exe) { return $true }
+  return (Test-Path (Join-Path (Get-ToolDir $t) $exe) -PathType Leaf)
+}
+
 function Select-Tools([string[]]$Wanted) {
-  if (-not $Wanted -or $Wanted.Count -eq 0 -or $Wanted -contains 'all') { return $script:Tools }
+  if (-not $Wanted -or $Wanted.Count -eq 0 -or $Wanted -contains 'all') {
+    return @($script:Tools | Where-Object { -not (Test-Optional $_) -or (Test-ToolPresent $_) })
+  }
   foreach ($n in $Wanted) {
     if (-not (Get-Tool $n)) {
       throw "unknown tool '$n'. Available: $(($script:Tools | ForEach-Object { $_.name }) -join ', '), all"
@@ -249,6 +260,7 @@ function Get-MsvcTool { return ($script:Tools | Where-Object { $_.type -eq 'msvc
 function Get-OurDirs {
   $dirs = @($Root)
   foreach ($t in $script:Tools) {
+    if ((Test-Optional $t) -and -not (Test-ToolPresent $t)) { continue }
     $base = Get-ToolDir $t
     foreach ($b in @(Get-Prop $t 'bin' @())) {
       if ($null -eq $b) { continue }

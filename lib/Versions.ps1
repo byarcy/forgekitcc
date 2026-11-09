@@ -44,6 +44,11 @@ function Get-Installed($t) {
   }
   $exe = Join-Path (Get-ToolDir $t) (Get-Prop $t 'exe' '')
   if (-not (Test-Path $exe -PathType Leaf)) { return $null }
+  if ($t.type -eq 'vscode') {
+    # Code.exe is a GUI program: read the version from the file instead of running it.
+    try { return [pscustomobject]@{ Version = (Get-Ver ([string](Get-Item $exe).VersionInfo.ProductVersion)) } }
+    catch { return [pscustomobject]@{ Version = $null } }
+  }
   try { $out = Invoke-Capture $exe @(Get-Prop $t 'versionArgs' @('--version')) }
   catch { return [pscustomobject]@{ Version = $null } }
   return [pscustomobject]@{ Version = (Get-Ver ($out -join ' ')) }
@@ -86,6 +91,14 @@ function Get-Latest($t) {
         }
       }
       return $best
+    }
+    'vscode' {
+      $u = Get-Json 'https://update.code.visualstudio.com/api/update/win32-x64-archive/stable/latest'
+      $v = Get-Ver ([string]$u.productVersion)
+      if (-not $v -or -not $u.url) { return $null }
+      return [pscustomobject]@{
+        Version = $v; Url = [string]$u.url; File = "vscode-$v.zip"; Size = [long]0; Sha256 = [string](Get-Prop $u 'sha256hash' '')
+      }
     }
     'msvc' {
       Update-MsvcScript
@@ -151,6 +164,10 @@ function Get-StatusRows([switch]$Quick) {
   foreach ($t in $script:Tools) {
     if ($Quick -and $t.type -eq 'msvc') { continue }   # the MSVC manifest is slow to fetch
     $inst = Get-Installed $t
+    if ((Test-Optional $t) -and -not $inst) {
+      $rows += [pscustomobject]@{ Tool = $t.name; Installed = '-'; Available = '-'; Status = 'optional'; Size = '-'; Bytes = $null; Error = $null }
+      continue
+    }
     $lat = $null; $err = $null
     try { $lat = Get-Latest $t; $reached++ } catch { $err = Get-ShortError $_ }
     if ($err)                               { $state = 'no data' }

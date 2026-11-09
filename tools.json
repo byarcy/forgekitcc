@@ -54,6 +54,17 @@
       "pin": "14.44",
       "dir": "msvc",
       "bin": []
+    },
+    {
+      "name": "vscode",
+      "type": "vscode",
+      "optional": true,
+      "dir": "vscode",
+      "exe": "Code.exe",
+      "bin": ["bin"],
+      "keep": ["data"],
+      "extensions": ["ms-vscode.cpptools"],
+      "verifyExclude": ["data\\*"]
     }
   ]
 }

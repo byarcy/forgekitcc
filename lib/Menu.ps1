@@ -41,7 +41,8 @@ function Get-MenuStates {
   $states = @()
   foreach ($t in $script:Tools) {
     $inst = Get-Installed $t
-    if (-not $inst)                   { $s = 'missing'; $c = 'Red' }
+    if (-not $inst -and (Test-Optional $t)) { $s = 'off'; $c = 'DarkGray' }
+    elseif (-not $inst)               { $s = 'missing'; $c = 'Red' }
     elseif (-not $inst.Version)       { $s = 'broken';  $c = 'Red' }
     elseif ($pending -contains $t.name) { $s = 'UPDATE'; $c = 'Yellow' }
     else                              { $s = 'ok';      $c = 'Green' }
@@ -147,11 +148,51 @@ function Open-BuildConsole {
   $m = Get-MsvcLayout
   if (-not $m -or -not (Test-Path $m.Setup)) {
     Write-Host ''
-    Write-Warn ' MSVC is not installed yet. Use option 2 first.'
+    Write-Warn ' MSVC is not installed yet. Use option 3 first.'
     Wait-AnyKey
     return
   }
   Start-Process -FilePath (Join-Path $Root 'env.bat') -WorkingDirectory $Root
+}
+
+# Folder picker window; falls back to typing the path.
+function Read-Folder([string]$Start) {
+  try {
+    Add-Type -AssemblyName System.Windows.Forms
+    $d = New-Object System.Windows.Forms.FolderBrowserDialog
+    $d.Description = 'Choose the project folder to open in VS Code'
+    if ($Start) { $d.SelectedPath = $Start }
+    if ($d.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) { return $d.SelectedPath }
+    return ''
+  } catch {
+    $hint = ''
+    if ($Start) { $hint = " (Enter = $Start)" }
+    $f = [string](Read-Host " Project folder$hint")
+    if (-not $f.Trim()) { return $Start }
+    return $f.Trim().Trim('"')
+  }
+}
+
+function Open-VSCodeMenu {
+  if (-not (Get-VSCodeExe)) {
+    if (-not (Confirm-Menu 'VS Code is not installed (about 120 MB). Install it now?')) { return }
+    Write-Host ''
+    $ok = $false
+    try { $ok = Invoke-Update @('vscode') } catch { Write-Err "ERROR: $(Get-ShortError $_)" }
+    Close-StatusLine
+    $script:MenuStates = $null
+    if (-not $ok -or -not (Get-VSCodeExe)) { Wait-AnyKey; return }
+  }
+  Write-Host ''
+  Write-Host ' Choose the project folder...' -ForegroundColor DarkGray
+  $folder = Read-Folder (Get-RecentFolder)
+  if (-not $folder) { return }
+  $init = $false
+  if (-not (Test-Path (Join-Path $folder '.vscode'))) {
+    $init = Confirm-Menu 'Add build (Ctrl+Shift+B) and debug (F5) settings to this folder?'
+  }
+  try { Open-VSCode $folder -Init:$init }
+  catch { Write-Err "ERROR: $(Get-ShortError $_)"; Wait-AnyKey }
 }
 
 function Show-Menu {
@@ -159,16 +200,18 @@ function Show-Menu {
     Show-Header
     Show-Options @(
       @('1', 'Open build console'),
-      @('2', 'Install / update'),
-      @('3', 'Check installation'),
-      @('4', 'Settings'),
+      @('2', 'Open VS Code'),
+      @('3', 'Install / update'),
+      @('4', 'Check installation'),
+      @('5', 'Settings'),
       @('0', 'Exit')
     )
-    switch (Read-Choice @('1', '2', '3', '4', '0')) {
+    switch (Read-Choice @('1', '2', '3', '4', '5', '0')) {
       '1' { Open-BuildConsole }
-      '2' { Show-UpdateMenu }
-      '3' { Show-CheckMenu }
-      '4' { Show-SettingsMenu }
+      '2' { Open-VSCodeMenu }
+      '3' { Show-UpdateMenu }
+      '4' { Show-CheckMenu }
+      '5' { Show-SettingsMenu }
       '0' { return }
     }
   }

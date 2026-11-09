@@ -121,3 +121,95 @@ function Invoke-SetPath([switch]$Remove) {
     Write-Info 'MSVC itself (cl, INCLUDE, LIB) loads only in the build console.'
   }
 }
+
+# ============================================================ VS Code
+function Get-VSCodeTool { return ($script:Tools | Where-Object { $_.type -eq 'vscode' } | Select-Object -First 1) }
+
+function Get-VSCodeExe {
+  $t = Get-VSCodeTool
+  if (-not $t) { return $null }
+  $exe = Join-Path (Get-ToolDir $t) (Get-Prop $t 'exe' 'Code.exe')
+  if (Test-Path $exe -PathType Leaf) { return $exe }
+  return $null
+}
+
+function Get-RecentFolder {
+  try { if (Test-Path $RecentFile) { $f = (Get-Content -Path $RecentFile -TotalCount 1).Trim(); if ($f -and (Test-Path $f)) { return $f } } } catch { }
+  return ''
+}
+
+# Writes .vscode\tasks.json and launch.json: Ctrl+Shift+B builds the open file, F5 debugs it.
+# Existing files are never overwritten.
+function Write-VSCodeFiles([string]$Folder) {
+  $dir = Join-Path $Folder '.vscode'
+  New-Item -ItemType Directory -Force -Path $dir | Out-Null
+  $exeOut = '/Fe:${fileDirname}\\${fileBasenameNoExtension}.exe'
+  $objOut = '/Fo:${fileDirname}\\${fileBasenameNoExtension}.obj'
+  $tasks = @"
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "build (cl)",
+      "type": "shell",
+      "command": "cl",
+      "args": ["/nologo", "/EHsc", "/W4", "/Zi", "/std:c++17", "/utf-8", "`${file}", "$exeOut", "$objOut"],
+      "options": { "cwd": "`${fileDirname}" },
+      "problemMatcher": ["`$msCompile"],
+      "group": { "kind": "build", "isDefault": true }
+    },
+    {
+      "label": "build (clang-cl)",
+      "type": "shell",
+      "command": "clang-cl",
+      "args": ["/nologo", "/EHsc", "/W4", "/Zi", "/std:c++17", "/utf-8", "`${file}", "$exeOut", "$objOut"],
+      "options": { "cwd": "`${fileDirname}" },
+      "problemMatcher": ["`$msCompile"],
+      "group": "build"
+    }
+  ]
+}
+"@
+  $launch = @"
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Build and debug the open file",
+      "type": "cppvsdbg",
+      "request": "launch",
+      "program": "`${fileDirname}\\`${fileBasenameNoExtension}.exe",
+      "cwd": "`${fileDirname}",
+      "console": "integratedTerminal",
+      "preLaunchTask": "build (cl)"
+    }
+  ]
+}
+"@
+  $written = @()
+  foreach ($pair in @(@('tasks.json', $tasks), @('launch.json', $launch))) {
+    $path = Join-Path $dir $pair[0]
+    if (Test-Path $path) { continue }
+    [IO.File]::WriteAllText($path, $pair[1].Replace("`r`n", "`n").Replace("`n", "`r`n"))
+    $written += $pair[0]
+  }
+  return $written
+}
+
+# Opens VS Code on a folder with the build environment loaded, so cl, clang-cl, cmake and ninja work inside it.
+function Open-VSCode([string]$Folder, [switch]$Init) {
+  $code = Get-VSCodeExe
+  if (-not $code) { throw 'VS Code is not installed. Run: forgekitcc install vscode' }
+  if (-not $Folder) { $Folder = (Get-Location).Path }
+  if (-not (Test-Path $Folder -PathType Container)) { throw "folder not found: $Folder" }
+  $Folder = (Resolve-Path $Folder).Path
+  try { Set-Content -Path $RecentFile -Value $Folder -Encoding UTF8 } catch { }
+  if ($Init) {
+    $w = @(Write-VSCodeFiles $Folder)
+    if ($w.Count -gt 0) { Write-Info "Created .vscode\$($w -join ', .vscode\'). Ctrl+Shift+B builds, F5 debugs." }
+  }
+  try { Import-BuildEnv }
+  catch { Write-Warn "VS Code opens without the compiler: $(Get-ShortError $_)" }
+  Write-Log 'INFO' "Opening VS Code in $Folder"
+  Start-Process -FilePath $code -ArgumentList (Format-Arg $Folder) -WorkingDirectory $Folder
+}

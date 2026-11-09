@@ -33,8 +33,9 @@ if ($Flags -contains '--verbose' -or $Flags -contains '-v') { $script:Verbosity 
 if ($Flags -contains '--quiet' -or $Flags -contains '-q')   { $script:Verbosity = 0 }
 if ($Flags -contains '--accept-license') { $script:AcceptLicense = $true }
 $FullCheck = $Flags -contains '--full'
+$InitVSCode = $Flags -contains '--init'
 foreach ($f in $Flags) {
-  if ($f -notin @('--verbose', '-v', '--quiet', '-q', '--accept-license', '--full')) {
+  if ($f -notin @('--verbose', '-v', '--quiet', '-q', '--accept-license', '--full', '--init')) {
     Write-Host "Unknown option '$f'. See: forgekitcc help" -ForegroundColor Yellow
     exit 1
   }
@@ -55,12 +56,14 @@ Usage: forgekitcc [command] [tools] [options]
   verify [tools]      Check that the installed files are complete
   verify --full       Also check file contents and build a test program
   env                 Load the build environment into this console
+  code [folder]       Open VS Code with the build environment (needs: install vscode)
+  code --init         Also add build (Ctrl+Shift+B) and debug (F5) settings
   path add | remove   Add or remove the tools in your user PATH
   clean               Delete downloads and temporary folders
   version             Show the ForgeKitCC version
   help                Show this help
 
-Tools:   $names (default: all)
+Tools:   $names (default: all; vscode is optional)
 Options: --verbose (-v)     more detail on screen
          --quiet (-q)       only errors and the final summary
          --accept-license   accept the Visual Studio Build Tools license
@@ -93,6 +96,11 @@ try {
       }
     }
     'doctor'  { $ok = Invoke-TestBuild }
+    'code'    {
+      $folder = ''
+      if ($Names.Count -gt 0) { $folder = $Names[0] }
+      Open-VSCode $folder -Init:$InitVSCode
+    }
     'clean'   { Invoke-Clean }
     'path' {
       $sub = ''

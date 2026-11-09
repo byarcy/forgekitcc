@@ -33,12 +33,12 @@ Step-by-step instructions for common situations. Each scenario stands on its own
 
 1. Extract the `forgekitcc` folder to a short path without spaces, such as `D:\forgekitcc`.
 2. Double-click `forgekitcc.bat`.
-3. Press **2** (Install / update), then **1** (Update all).
+3. Press **3** (Install / update), then **1** (Update all).
 4. When asked, press **y** to accept the Visual Studio Build Tools license.
 5. Wait. Each tool shows one line and ends with `done`. The first install downloads 2–3 GB.
-6. Press **3** (Check installation), then **2** (Full check + test build). You should see `test build ok` for both `clang-cl` and `cl`.
+6. Press **4** (Check installation), then **2** (Full check + test build). You should see `test build ok` for both `clang-cl` and `cl`.
 
-**Optional:** to run `forgekitcc` from any console, press **4** (Settings), then **1** (Add to PATH), and open a new console.
+**Optional:** to run `forgekitcc` from any console, press **5** (Settings), then **1** (Add to PATH), and open a new console.
 
 ---
 
@@ -136,14 +136,14 @@ ForgeKitCC only needs internet to install and update.
 
 **Prepare (on a PC with internet):**
 1. Install everything as in scenario 1.
-2. Run the full check: menu **3 → 2**.
-3. Optionally, free space with menu **4 → 4** (Clean temp files).
+2. Run the full check: menu **4 → 2**.
+3. Optionally, free space with menu **5 → 4** (Clean temp files).
 4. Copy the whole `forgekitcc` folder to a USB drive or external disk.
 
 **Use (on the offline PC):**
 1. Copy the folder to the disk, for example `D:\forgekitcc`. Running it from the USB drive also works, but builds are slower.
 2. Double-click `env.bat` and build as usual.
-3. Optionally, use menu **4 → 1** to add it to PATH on that PC.
+3. Optionally, use menu **5 → 1** to add it to PATH on that PC.
 
 The menu and the build console never wait for the network. The weekly update check skips silently when there is no connection.
 
@@ -152,10 +152,10 @@ The menu and the build console never wait for the network. The weekly update che
 ## 7. Slow or unstable connection
 
 - **Connection lost during an update.** The tool shows `FAILED: connection lost`. When the connection returns, choose the same option again. The download resumes where it stopped.
-- **Update only part of it.** Use menu **2 → 2** (Choose tools) and pick one tool at a time, for example the smaller ones first.
+- **Update only part of it.** Use menu **3 → 2** (Choose tools) and pick one tool at a time, for example the smaller ones first.
 - **No internet at all.** ForgeKitCC says so and changes nothing.
 - **See what it is doing.** From a console, run `forgekitcc update --verbose`.
-- **See what went wrong.** The error line names the log file. Open the folder with menu **4 → 3**.
+- **See what went wrong.** The error line names the log file. Open the folder with menu **5 → 3**.
 
 Approximate download sizes: Python 15 MB, Ninja 0.3 MB, CMake 45 MB, LLVM 1.2 GB, MSVC and the Windows SDK about 1 GB.
 
@@ -202,22 +202,34 @@ Many tools say they need *"the Visual Studio C++ tools and the Windows SDK"*. Fo
 
 ## 11. Work in VS Code
 
-1. Open the build console, go to your project and run:
-   ```
-   code .
-   ```
-   VS Code inherits the environment, so the compilers are found.
-2. With the **CMake Tools** extension, choose the kit **[Unspecified]**. It uses the compilers from the environment. To force one, add this to `.vscode/settings.json`:
+ForgeKitCC can install a portable VS Code. It needs no installer and no admin rights, and its settings and extensions stay in `vscode\data`.
+
+**First time**
+1. In the menu, press **2** (Open VS Code). It offers to install VS Code (about 120 MB) together with the Microsoft C/C++ extension.
+2. Choose your project folder.
+3. When asked, press **y** to add build and debug settings. This creates `.vscode\tasks.json` and `.vscode\launch.json` and never overwrites existing files.
+
+**Every day**
+- Menu **2**, choose the folder. Or, from any console: `forgekitcc code D:\path\to\project`. Inside the build console, `code .` also works.
+- Open a `.cpp` or `.c` file and press **Ctrl+Shift+B** to build it with `cl`. Use *Terminal → Run Task → build (clang-cl)* to build it with clang-cl.
+- Press **F5** to build and debug the open file. Set breakpoints by clicking left of the line numbers.
+
+These settings build **one file** into a program with the same name, which fits exercises and small programs. For projects with several files, use CMake:
+
+1. Install the **CMake Tools** extension and choose the kit **[Unspecified]**. It uses the compilers from the environment. To force one, add this to `.vscode/settings.json`:
    ```json
    {
      "cmake.generator": "Ninja",
      "cmake.configureSettings": { "CMAKE_CXX_COMPILER": "clang-cl", "CMAKE_C_COMPILER": "clang-cl" }
    }
    ```
-3. For accurate code completion, add `-DCMAKE_EXPORT_COMPILE_COMMANDS=ON` when you configure, and point the C/C++ extension to `build/compile_commands.json`.
-4. For debugging, the VS Code C/C++ extension includes a debugger (`cppvsdbg`) that works with programs built by `cl` or `clang-cl`. Build with debug information, for example with `-DCMAKE_BUILD_TYPE=Debug`.
+2. For accurate code completion, add `-DCMAKE_EXPORT_COMPILE_COMMANDS=ON` when you configure, and point the C/C++ extension to `build/compile_commands.json`.
 
-> If you open VS Code from the Start menu instead, it won't see the compilers. Always start it from the build console.
+**Your own VS Code.** If VS Code is already installed on the PC, start it from the build console (`code .`) so it sees the compilers. Opened from the Start menu, it won't find them.
+
+**If `cl` is not found inside VS Code**, another VS Code window was already open without the build environment, and new windows join it. Close every VS Code window and open it again from ForgeKitCC.
+
+**Updates.** VS Code is updated with the other tools (menu **3**). Its own update check is turned off, because ForgeKitCC handles it.
 
 ---
 
@@ -244,10 +256,10 @@ cmake --build build || exit /b 1
 Work through these steps in order:
 
 1. **Look at the menu header.** A tool marked `missing` or `broken` points to the problem.
-2. **Quick check:** menu **3 → 1**. It lists missing or changed files and offers to repair them.
-3. **Full check:** menu **3 → 2**. It also builds a test program, which shows whether the compilers really work.
+2. **Quick check:** menu **4 → 1**. It lists missing or changed files and offers to repair them.
+3. **Full check:** menu **4 → 2**. It also builds a test program, which shows whether the compilers really work.
 4. **Repair a tool:** accept the repair offer, or run `forgekitcc repair <tool>`.
-5. **Read the log:** menu **4 → 3**. Each line has the time and the step, and errors are marked `[ERROR]`.
+5. **Read the log:** menu **5 → 3**. Each line has the time and the step, and errors are marked `[ERROR]`.
 
 | Message | What to do |
 |---|---|
@@ -257,16 +269,16 @@ Work through these steps in order:
 | `MSVC 14.44 is no longer offered` | Microsoft removed that version. Change `"pin"` in `tools.json`. |
 | `GitHub refused the request (rate limit)` | Wait an hour, or set the `GITHUB_TOKEN` variable. |
 | `license not accepted` | Run the update again and answer **y**. |
-| `'forgekitcc' is not recognized` | Run it from its folder, or use menu **4 → 1** and open a new console. |
+| `'forgekitcc' is not recognized` | Run it from its folder, or use menu **5 → 1** and open a new console. |
 
 ---
 
 ## 14. Move or upgrade ForgeKitCC
 
 **Move the folder:**
-1. Before moving it, use menu **4 → 2** (Remove from PATH).
+1. Before moving it, use menu **5 → 2** (Remove from PATH).
 2. Move the folder.
-3. In the new location, use menu **4 → 1** (Add to PATH).
+3. In the new location, use menu **5 → 1** (Add to PATH).
 
 **Upgrade ForgeKitCC itself:**
 1. Extract the new version over the old folder, replacing `forgekitcc.bat`, `forgekitcc.ps1`, `env.bat` and the `lib\` folder.

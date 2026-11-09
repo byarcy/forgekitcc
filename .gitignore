@@ -4,6 +4,7 @@
 /cmake/
 /llvm/
 /msvc/
+/vscode/
 *.old/
 
 # Runtime files
@@ -12,4 +13,5 @@
 /logs/
 /manifests/
 /state.json
+/recent.txt
 /portable-msvc.py

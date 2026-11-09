@@ -1,8 +1,8 @@
 # ForgeKitCC
 
-**A portable C/C++ toolchain for Windows.** It puts the **Visual Studio 2022 compiler (MSVC v143)**, the **Windows SDK**, **clang-cl (LLVM)**, **CMake**, **Ninja** and **Python** in one folder. You don't install Visual Studio, and you don't need admin rights.
+**A portable C/C++ toolchain for Windows.** It puts the **Visual Studio 2022 compiler (MSVC v143)**, the **Windows SDK**, **clang-cl (LLVM)**, **CMake**, **Ninja** and **Python** in one folder, plus an optional portable **VS Code**. You don't install Visual Studio, and you don't need admin rights.
 
-Version **0.2.0**. For step-by-step help with common tasks, see **[GUIDE.md](GUIDE.md)**.
+Version **0.3.0**. For step-by-step help with common tasks, see **[GUIDE.md](GUIDE.md)**.
 
 ---
 
@@ -36,8 +36,8 @@ Version **0.2.0**. For step-by-step help with common tasks, see **[GUIDE.md](GUI
 
 1. Extract the `forgekitcc` folder to a path **without spaces or accents**, for example `D:\forgekitcc`.
 2. Double-click `forgekitcc.bat` to open the menu.
-3. Press **2** (Install / update), then **1** (Update all). When asked, accept the Visual Studio Build Tools license.
-4. Press **3** (Check installation), then **2** (Full check + test build) to confirm everything works.
+3. Press **3** (Install / update), then **1** (Update all). When asked, accept the Visual Studio Build Tools license.
+4. Press **4** (Check installation), then **2** (Full check + test build) to confirm everything works.
 5. Press **1** to open the build console and start working.
 
 The first install downloads about 2–3 GB.
@@ -49,27 +49,29 @@ The first install downloads about 2–3 GB.
 Run `forgekitcc` with no command, or double-click `forgekitcc.bat`. The menu opens straight away. It doesn't touch the network and waits for you to press a key.
 
 ```
- ForgeKitCC v0.2.0
+ ForgeKitCC v0.3.0
  ----------------------------------------------------------
- python ok   ninja ok   cmake ok   llvm UPDATE   msvc ok
+ python ok   ninja ok   cmake ok   llvm UPDATE   msvc ok   vscode off
 
   1  Open build console
-  2  Install / update
-  3  Check installation
-  4  Settings
+  2  Open VS Code
+  3  Install / update
+  4  Check installation
+  5  Settings
   0  Exit
 
  Press a number:
 ```
 
-The top line shows the state of each tool: `ok`, `UPDATE` (a newer version was found in the last check), `missing` or `broken` (it is installed but won't run).
+The top line shows the state of each tool: `ok`, `UPDATE` (a newer version was found in the last check), `missing`, `broken` (it is installed but won't run) or `off` (an optional tool that isn't installed).
 
 | Menu | Options |
 |---|---|
 | **1 Open build console** | Opens a new console window with every tool loaded. |
-| **2 Install / update** | `1` Update all · `2` Choose tools (shows the version and disk size of each tool) |
-| **3 Check installation** | `1` Quick check · `2` Full check + test build. If problems are found, it offers to repair them. |
-| **4 Settings** | `1` Add to PATH · `2` Remove from PATH · `3` Open log folder · `4` Clean temp files |
+| **2 Open VS Code** | Asks for a project folder and opens it in VS Code with every tool loaded. The first time, it offers to install VS Code. |
+| **3 Install / update** | `1` Update all · `2` Choose tools (shows the version and disk size of each tool) |
+| **4 Check installation** | `1` Quick check · `2` Full check + test build. If problems are found, it offers to repair them. |
+| **5 Settings** | `1` Add to PATH · `2` Remove from PATH · `3` Open log folder · `4` Clean temp files |
 
 You only press the number; there's no need to press Enter. `0` or `Esc` goes back.
 
@@ -89,12 +91,14 @@ Every menu option also exists as a command, which is useful for scripts.
 | `forgekitcc verify [tools]` | Checks that every installed file is present and the right size. |
 | `forgekitcc verify --full` | Also checks the file contents and builds a test program. |
 | `forgekitcc env` | Loads the build environment into the current console. |
+| `forgekitcc code [folder]` | Opens VS Code on a folder (default: the current one) with the build environment. |
+| `forgekitcc code --init` | Also adds build (Ctrl+Shift+B) and debug (F5) settings to the folder. |
 | `forgekitcc path add` / `remove` | Adds the tools to your user PATH, or removes them. |
 | `forgekitcc clean` | Deletes downloads and temporary folders. |
 | `forgekitcc version` | Shows the version. |
 | `forgekitcc help` | Shows the help. |
 
-**Tools:** `python`, `ninja`, `cmake`, `llvm`, `msvc`, or `all`, which is the default. For example: `forgekitcc update llvm cmake`.
+**Tools:** `python`, `ninja`, `cmake`, `llvm`, `msvc`, `vscode`, or `all`, which is the default. `vscode` is optional: `all` skips it until you install it with `forgekitcc install vscode`. For example: `forgekitcc update llvm cmake`.
 
 **Options:**
 
@@ -103,6 +107,7 @@ Every menu option also exists as a command, which is useful for scripts.
 | `--verbose`, `-v` | Shows more detail on screen. |
 | `--quiet`, `-q` | Shows only errors and the final summary. |
 | `--accept-license` | Accepts the Visual Studio Build Tools license without asking. |
+| `--init` | With `code`: adds `.vscode\tasks.json` and `launch.json` if they don't exist. |
 
 ---
 
@@ -110,7 +115,7 @@ Every menu option also exists as a command, which is useful for scripts.
 
 To open it, use menu option **1**, double-click `env.bat`, or run `forgekitcc env` in a console you already have open.
 
-Inside it you can use `cl`, `link`, `clang-cl`, `cmake`, `ninja`, `python` and `pip`. MSVC's `INCLUDE` and `LIB` variables are also set.
+Inside it you can use `cl`, `link`, `clang-cl`, `cmake`, `ninja`, `python` and `pip`, and `code` when VS Code is installed. MSVC's `INCLUDE` and `LIB` variables are also set.
 
 The console also sets variables that help other tools find the portable MSVC:
 
@@ -145,7 +150,7 @@ Once a week, opening the console also checks for updates. Without internet it sk
 
 **Checksums.** GitHub downloads are verified with their SHA-256 checksum when GitHub provides one. A damaged download is deleted automatically.
 
-**Logs.** Every action is written to `logs\YYYY-MM-DD.log` with full detail: commands, output and errors. When something fails, the screen shows the name of the log file. Logs older than 30 days are deleted automatically. To open the folder, use menu **4 → 3**.
+**Logs.** Every action is written to `logs\YYYY-MM-DD.log` with full detail: commands, output and errors. When something fails, the screen shows the name of the log file. Logs older than 30 days are deleted automatically. To open the folder, use menu **5 → 3**.
 
 **GitHub limit.** Without signing in, GitHub allows 60 requests per hour, which is plenty for normal use. If you reach the limit, set a `GITHUB_TOKEN` environment variable with a personal access token.
 
@@ -227,7 +232,9 @@ Supported archive formats: `.zip`, `.nupkg`, `.tar.xz`, `.tar.gz` and `.tar.bz2`
 | `env.bat` | Double-click it to open the build console. |
 | `forgekitcc.ps1`, `lib\` | Program code. |
 | `tools.json` | Tools and pinned versions. |
-| `python\`, `ninja\`, `cmake\`, `llvm\`, `msvc\` | The installed tools. |
+| `python\`, `ninja\`, `cmake\`, `llvm\`, `msvc\`, `vscode\` | The installed tools. |
+| `vscode\data\` | VS Code settings and extensions (portable mode). Kept when VS Code is updated. |
+| `recent.txt` | Last folder opened in VS Code from the menu. |
 | `manifests\` | File lists used by the installation check. |
 | `logs\` | Daily logs. |
 | `state.json` | Result of the last update check. |
@@ -237,7 +244,7 @@ Supported archive formats: `.zip`, `.nupkg`, `.tar.xz`, `.tar.gz` and `.tar.bz2`
 
 ## 10. Limitations
 
-- **Not included:** an IDE, the Visual Studio debugger, MSBuild (so `.sln` and `.vcxproj` files won't open), MFC, ATL, UWP and C++/CLI.
+- **Not included:** the Visual Studio IDE and its debugger (VS Code is the optional editor), MSBuild (so `.sln` and `.vcxproj` files won't open), MFC, ATL, UWP and C++/CLI.
 - **CMake generator:** use the **Ninja** generator. The "Visual Studio 17 2022" generator doesn't work.
 - **Tools that require a full Visual Studio:** installers and tools that look for Visual Studio with `vswhere`, such as node-gyp, Qt Creator and some installers, may still not detect it. Run them from the build console. See GUIDE.md for each case.
 - **Global PATH:** `path add` doesn't include MSVC, because `cl` also needs `INCLUDE` and `LIB`. Compile from the build console.
@@ -248,7 +255,7 @@ Supported archive formats: `.zip`, `.nupkg`, `.tar.xz`, `.tar.gz` and `.tar.bz2`
 
 ## 11. Uninstalling
 
-1. Run `forgekitcc path remove`, or use menu **4 → 2**.
+1. Run `forgekitcc path remove`, or use menu **5 → 2**.
 2. Delete the folder.
 
 Nothing else is left on the system.
@@ -257,8 +264,11 @@ Nothing else is left on the system.
 
 ## 12. Changes
 
-**Unreleased**
+**0.3.0**
 
+- Optional portable VS Code: menu **2** and `forgekitcc code`. It opens with the build environment, keeps its settings and extensions in `vscode\data`, and gets the C/C++ extension on install.
+- `code --init` (or the menu prompt) adds build and debug settings for single-file programs.
+- The menu gains option 2; the other options move down by one.
 - `status` and the "Choose tools" menu show how much disk space each tool uses.
 
 **0.2.0**

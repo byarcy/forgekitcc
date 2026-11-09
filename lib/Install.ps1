@@ -126,6 +126,11 @@ function Install-Archive($t, $Latest, [string]$Label) {
   } elseif ($subdir) {
     $src = Join-Path $work $subdir
     if (-not (Test-Path $src)) { throw "folder '$subdir' not found inside $($Latest.File)" }
+  } else {
+    # Some archives wrap everything in one folder; use it when the program is not at the top.
+    $exe = [string](Get-Prop $t 'exe' '')
+    $top = @(Get-ChildItem $work -Force)
+    if ($exe -and -not (Test-Path (Join-Path $work $exe)) -and $top.Count -eq 1 -and $top[0].PSIsContainer) { $src = $top[0].FullName }
   }
 
   # Python: remember the pip packages so they can be reinstalled in the new version.
@@ -142,12 +147,25 @@ function Install-Archive($t, $Latest, [string]$Label) {
     }
   }
 
+  # Folders listed in "keep" (VS Code settings and extensions) move to the new version.
+  $kept = @()
+  foreach ($k in @(Get-Prop $t 'keep' @())) {
+    $old = Join-Path $dest $k
+    if ((Test-Path $old) -and -not (Test-Path (Join-Path $src $k))) { Move-Item $old (Join-Path $src $k); $kept += $k }
+  }
+
   Write-Status "$Label  installing"
-  Replace-Dir $src $dest
+  try { Replace-Dir $src $dest }
+  catch {
+    foreach ($k in $kept) { if (Test-Path (Join-Path $src $k)) { Move-Item (Join-Path $src $k) (Join-Path $dest $k) -ErrorAction SilentlyContinue } }
+    throw
+  }
   Remove-Dir $work
   Remove-Item $file -Force -ErrorAction SilentlyContinue
 
   Write-Manifest $t "$($Latest.Version)" $Label
+
+  if ($t.type -eq 'vscode') { Initialize-VSCode $t $Label }
 
   if ($isPython) {
     $py = Join-Path $dest (Get-Prop $t 'exe' 'python.exe')
@@ -157,6 +175,29 @@ function Install-Archive($t, $Latest, [string]$Label) {
       Write-Status "$Label  reinstalling pip packages"
       try { Invoke-Capture $py @('-m', 'pip', 'install', '--disable-pip-version-check', '-r', $requirements) | Out-Null }
       catch { Write-Log 'WARN' 'Some pip packages could not be reinstalled.'; $script:Notes += "Some pip packages could not be reinstalled. $(Get-LogHint)" }
+    }
+  }
+}
+
+# VS Code in portable mode: settings and extensions live in vscode\data, nothing goes to AppData.
+function Initialize-VSCode($t, [string]$Label) {
+  $dir = Get-ToolDir $t
+  $userDir = Join-Path $dir 'data\user-data\User'
+  New-Item -ItemType Directory -Force -Path $userDir, (Join-Path $dir 'data\tmp') | Out-Null
+  $settings = Join-Path $userDir 'settings.json'
+  if (-not (Test-Path $settings)) {
+    # ForgeKitCC installs the updates, so VS Code should not offer its own.
+    Set-Content -Path $settings -Encoding UTF8 -Value @('{', '  "update.mode": "none"', '}')
+  }
+  $cli = Join-Path $dir 'bin\code.cmd'
+  $extDir = Join-Path $dir 'data\extensions'
+  foreach ($ext in @(Get-Prop $t 'extensions' @())) {
+    if (Get-ChildItem $extDir -Directory -Filter "$ext-*" -ErrorAction SilentlyContinue) { continue }
+    Write-Status "$Label  adding extension $ext"
+    try { Invoke-Capture 'cmd.exe' @('/d', '/c', $cli, '--install-extension', $ext, '--force') | Out-Null }
+    catch {
+      Write-Log 'WARN' "Extension $ext was not installed."
+      $script:Notes += "VS Code: the extension $ext could not be installed. Add it from VS Code (Extensions)."
     }
   }
 }

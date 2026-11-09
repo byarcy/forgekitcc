@@ -22,5 +22,5 @@ set "PATH=%FKCC_PATHS%;%PATH%"
 set "FKCC_SETUP="
 set "FKCC_PATHS="
 powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0forgekitcc.ps1" internal-notify
-echo ForgeKitCC build console: cl, clang-cl, cmake, ninja, python
+echo ForgeKitCC build console: cl, clang-cl, cmake, ninja, python, code (if installed)
 exit /b 0
